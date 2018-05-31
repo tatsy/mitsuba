@@ -1,3 +1,10 @@
+# Scenes
+scenes
+
+# Build output
+build/Debug
+build/Release
+
 # Documentation
 doc/apidocs/*
 doc/*.aux
