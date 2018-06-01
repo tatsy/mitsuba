@@ -107,7 +107,10 @@ struct HeterogeneousBSSRDFQuery {
         Point2 uvO = proj.map(p);
         Point2 uvI = proj.map(sample.p);
 
-        __m128 _rSqr = _mm_set1_ps(r2);
+        const __m128 _half = _mm_set1_ps(0.5f);
+        const __m128 _invTwoPi = _mm_set1_ps(INV_TWOPI);
+        const __m128 _rSqr = _mm_set1_ps(r2);
+
         __m128 _Pi = _mm_set1_ps(0.0f);
         __m128 _Po = _mm_set1_ps(0.0f);
         for (int h = 0; h < bssrdf.numGaussians; h++) {
@@ -120,8 +123,6 @@ struct HeterogeneousBSSRDFQuery {
             const __m128 _b = _mm_set_ps(b[0], b[1], b[2], 0.0f);
 
             // Gauss
-            const __m128 _half = _mm_set1_ps(0.5f);
-            const __m128 _invTwoPi = _mm_set1_ps(INV_TWOPI);
             const __m128 _bHalf = _mm_mul_ps(_b, _half);
             const __m128 _expr2 = math::exp_ps(negate_ps(_mm_mul_ps(_bHalf, _rSqr)));
             const __m128 _G = _mm_mul_ps(_mm_mul_ps(_b, _invTwoPi), _expr2);
@@ -450,7 +451,7 @@ public:
             }
         }
 
-        reader.read((char*)buffer, sizeof(double) * bssrdf.numGaussians);
+        reader.read((char*)buffer, sizeof(double) * bssrdf.numGaussians * 3);
         m_radius = std::numeric_limits<Float>::max();
 
         const Float scale2 = m_scale * m_scale;
