@@ -34,7 +34,7 @@
 MTS_NAMESPACE_BEGIN
 
 inline Float gaussian2D(Float x, Float b) {
-    return (b * INV_TWOPI) * std::exp(-b * x * x);
+    return (b * INV_TWOPI) * std::exp(-0.5 * b * x * x);
 }
 
 struct PlanarProjection {
