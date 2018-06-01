@@ -81,6 +81,7 @@ struct HeterogeneousBSSRDFQuery {
         : bssrdf(bssrdf), proj(uAxis, vAxis, uOffset, vOffset), result(0.0f), p(p) {
     }
 
+#if !defined(MTS_SSE) || SPECTRUM_SAMPLES != 3
     inline void operator()(const IrradianceSample &sample) {
         Float radius = (p - sample.p).length();
         Point2 uvO = proj.map(p);
@@ -100,6 +101,51 @@ struct HeterogeneousBSSRDFQuery {
         }
         result += Rd * sample.E * sample.area;
     }
+#else
+    inline void operator()(const IrradianceSample &sample) {
+        Float r2 = (p - sample.p).lengthSquared();
+        Point2 uvO = proj.map(p);
+        Point2 uvI = proj.map(sample.p);
+
+        __m128 _rSqr = _mm_set1_ps(r2);
+        __m128 _Pi = _mm_set1_ps(0.0f);
+        __m128 _Po = _mm_set1_ps(0.0f);
+        for (int h = 0; h < bssrdf.numGaussians; h++) {
+            const Spectrum &wO = bssrdf.getWeight(uvO, h);
+            const Spectrum &wI = bssrdf.getWeight(uvI, h);
+            const __m128 _wO = _mm_set_ps(wO[0], wO[1], wO[2], 0.0f);
+            const __m128 _wI = _mm_set_ps(wI[0], wI[1], wI[2], 0.0f);
+
+            const Spectrum &b = bssrdf.betas[h];
+            const __m128 _b = _mm_set_ps(b[0], b[1], b[2], 0.0f);
+
+            // Gauss
+            const __m128 _half = _mm_set1_ps(0.5f);
+            const __m128 _invTwoPi = _mm_set1_ps(INV_TWOPI);
+            const __m128 _bHalf = _mm_mul_ps(_b, _half);
+            const __m128 _expr2 = math::exp_ps(negate_ps(_mm_mul_ps(_bHalf, _rSqr)));
+            const __m128 _G = _mm_mul_ps(_mm_mul_ps(_b, _invTwoPi), _expr2);
+
+            // Profiles
+            const __m128 _wOG = _mm_mul_ps(_wO, _G);
+            const __m128 _wIG = _mm_mul_ps(_wI, _G);
+
+            // Add
+            _Po = _mm_add_ps(_Po, _wOG);
+            _Pi = _mm_add_ps(_Pi, _wIG);
+        }
+
+        SSEVector _Rd;
+        _Rd.ps = _mm_sqrt_ps(_mm_mul_ps(_Po, _Pi));
+
+        Spectrum Rd;
+        Rd[0] = _Rd.f[3];
+        Rd[1] = _Rd.f[2];
+        Rd[2] = _Rd.f[1];
+
+        result += Rd * sample.E * sample.area;
+    }
+#endif
 
     inline const Spectrum &getResult() const {
         return result;
