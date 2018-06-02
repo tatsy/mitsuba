@@ -445,8 +445,7 @@ public:
                     const Float R = buffer[h * 3 + 0];
                     const Float G = buffer[h * 3 + 1];
                     const Float B = buffer[h * 3 + 2];
-                    Float RGB[3] = { R, G, B };
-                    bssrdf.weightCoefs[index] = Spectrum(RGB);
+                    bssrdf.weightCoefs[index].fromLinearRGB(R, G, B);
                 }
             }
         }
@@ -459,8 +458,7 @@ public:
             const Float R = buffer[h * 3 + 0] / scale2;
             const Float G = buffer[h * 3 + 1] / scale2;
             const Float B = buffer[h * 3 + 2] / scale2;
-            Float RGB[3] = { R, G, B };
-            bssrdf.betas[h] = Spectrum(RGB);
+            bssrdf.betas[h].fromLinearRGB(R, G, B);
 
             for (int lambda = 0; lambda < SPECTRUM_SAMPLES; lambda++) {
                 Float t = std::sqrt((Float)(1.0 / bssrdf.betas[h][lambda]));
