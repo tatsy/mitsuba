@@ -89,9 +89,10 @@ if sys.platform == 'win32':
         installTargets += env.Install(distDir, '#data/windows/README.txt')
 
         if hasQt:
+                print env['QT5_LIBPATH']
                 install(distDir, ['mtsgui/mtsgui.exe'])
                 install(distDir, ['Qt5Core.dll', 'Qt5Gui.dll', 'Qt5Widgets.dll', 'Qt5Xml.dll',
-                        'Qt5Network.dll', 'Qt5OpenGL.dll', 'Qt5XmlPatterns.dll'], prefix = env['QT5_LIBPATH'])
+                        'Qt5Network.dll', 'Qt5OpenGL.dll', 'Qt5XmlPatterns.dll'], prefix = '$QTDIR/bin') #env['QT5_LIBPATH'])
 elif sys.platform == 'darwin':
         for i in plugins:
                 plugin = env.Install(os.path.join(distDir, 'plugins'), i)
