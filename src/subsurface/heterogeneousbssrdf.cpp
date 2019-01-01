@@ -33,8 +33,13 @@
 
 MTS_NAMESPACE_BEGIN
 
+/**
+ * gaussian2D computes 2D normalized density of Gaussian function.
+ * @param b: inverse square of standard deviation, i.e., 1 / s^2
+ */
 inline Float gaussian2D(Float x, Float b) {
-    return (b * INV_TWOPI) * std::exp(-0.5 * b * x * x);
+    const double ret = (b * INV_TWOPI) * std::exp(-0.5 * b * x * x);
+    return (Float)ret;
 }
 
 struct PlanarProjection {
@@ -355,9 +360,6 @@ public:
         m_uOffset = props.getFloat("uOffset");
         m_vOffset = props.getFloat("vOffset");
 
-        /* Scaling irradiance */
-        m_irrScale = props.getFloat("irrScale", 1.0);
-
         Float intIOR = lookupIOR(props, "intIOR", "bk7");
         Float extIOR = lookupIOR(props, "extIOR", "air");
         if (intIOR < 0 || extIOR < 0) {
@@ -414,7 +416,7 @@ public:
         HeterogeneousBSSRDFQuery query(bssrdf, m_uAxis, m_vAxis, m_uOffset, m_vOffset, its.p);
 
         m_octree->performQuery(query);
-        Spectrum result(query.getResult() * (m_irrScale * m_Fdr * INV_PI));
+        Spectrum result(query.getResult() * INV_PI);
 
         if (m_eta != 1.0f) {
             result *= 1.0f - fresnelDielectricExt(dot(its.shFrame.n, d), m_eta);
@@ -442,9 +444,9 @@ public:
                 reader.read((char*)buffer, sizeof(double) * bssrdf.numGaussians * 3);
                 for (int h = 0; h < bssrdf.numGaussians; h++) {
                     int index = (y * bssrdf.areaWidth + x) * bssrdf.numGaussians + h;
-                    const Float R = buffer[h * 3 + 0];
-                    const Float G = buffer[h * 3 + 1];
-                    const Float B = buffer[h * 3 + 2];
+                    const Float R = (Float)buffer[h * 3 + 0];
+                    const Float G = (Float)buffer[h * 3 + 1];
+                    const Float B = (Float)buffer[h * 3 + 2];
                     bssrdf.weightCoefs[index].fromLinearRGB(R, G, B);
                 }
             }
@@ -455,13 +457,13 @@ public:
 
         const Float scale2 = m_scale * m_scale;
         for (int h = 0; h < bssrdf.numGaussians; h++) {
-            const Float R = buffer[h * 3 + 0] / scale2;
-            const Float G = buffer[h * 3 + 1] / scale2;
-            const Float B = buffer[h * 3 + 2] / scale2;
+            const Float R = (Float)buffer[h * 3 + 0] / scale2;
+            const Float G = (Float)buffer[h * 3 + 1] / scale2;
+            const Float B = (Float)buffer[h * 3 + 2] / scale2;
             bssrdf.betas[h].fromLinearRGB(R, G, B);
 
             for (int lambda = 0; lambda < SPECTRUM_SAMPLES; lambda++) {
-                Float t = std::sqrt((Float)(1.0 / bssrdf.betas[h][lambda]));
+                Float t = (Float)std::sqrt(1.0 / bssrdf.betas[h][lambda]);
                 m_radius = std::min(m_radius, t);
             }
         }
@@ -565,7 +567,7 @@ public:
     MTS_DECLARE_CLASS()
 private:
     Float m_radius, m_sampleMultiplier;
-    Float m_Fdr, m_quality, m_eta, m_irrScale;
+    Float m_Fdr, m_quality, m_eta;
 
     fs::path m_fileName;
     Vector m_uAxis, m_vAxis;
