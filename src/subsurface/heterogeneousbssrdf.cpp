@@ -113,6 +113,7 @@ struct HeterogeneousBSSRDFQuery {
         Point2 uvI = proj.map(sample.p);
 
         const __m128 _half = _mm_set1_ps(0.5f);
+        const __m128 _invPi = _mm_set1_ps(INV_PI);
         const __m128 _invTwoPi = _mm_set1_ps(INV_TWOPI);
         const __m128 _rSqr = _mm_set1_ps(r2);
 
@@ -142,7 +143,7 @@ struct HeterogeneousBSSRDFQuery {
         }
 
         SSEVector _Rd;
-        _Rd.ps = _mm_sqrt_ps(_mm_mul_ps(_Po, _Pi));
+        _Rd.ps = _mm_mul_ps(_invPi, _mm_sqrt_ps(_mm_mul_ps(_Po, _Pi)));
 
         Spectrum Rd;
         Rd[0] = _Rd.f[3];
