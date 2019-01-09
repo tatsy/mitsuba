@@ -32,12 +32,12 @@ RUN apt-get install -qq \
   libglewmx-dev libeigen3-dev libfftw3-dev
 
 # Install Mitsuba renderer
-RUN git clone https://github.com/tatsy/mitsuba.git
+RUN git clone https://github.com/tatsy/mitsuba.git $HOME/mitsuba
 RUN \
-  cd mitsuba && \
+  cd $HOME/mitsuba && \
   cp build/config-linux-gcc.py config.py
 RUN \
-  cd mitsuba && \
+  cd $HOME/mitsuba && \
   scons -j4
 
 # Setup ZSH
@@ -45,7 +45,7 @@ RUN apt-get install -qq zsh
 RUN wget https://github.com/robbyrussell/oh-my-zsh/raw/master/tools/install.sh -O - | zsh || true
 
 # Environment path
-ENV LD_LIBRARY_PATH $HOME/mitsuba
+ENV LD_LIBRARY_PATH /root/mitsuba/dist
 
 # Run setting
 CMD ["/bin/zsh"]
