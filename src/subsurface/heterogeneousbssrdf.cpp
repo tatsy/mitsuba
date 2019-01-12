@@ -444,7 +444,7 @@ public:
             for (int x = 0; x < bssrdf.areaWidth; x++) {
                 reader.read((char*)buffer, sizeof(double) * bssrdf.numGaussians * 3);
                 for (int h = 0; h < bssrdf.numGaussians; h++) {
-                    int index = (y * bssrdf.areaWidth + x) * bssrdf.numGaussians + h;
+                    const int index = ((bssrdf.areaHeight - y - 1) * bssrdf.areaWidth + x) * bssrdf.numGaussians + h;
                     const Float R = (Float)buffer[h * 3 + 0];
                     const Float G = (Float)buffer[h * 3 + 1];
                     const Float B = (Float)buffer[h * 3 + 2];
