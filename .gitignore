@@ -34,6 +34,7 @@ build/.vs/**/*
 data/windows/mitsuba_res.res
 dist
 wmain_stub.obj
+.vscode
 
 # Debugging history files
 \.gdb_history

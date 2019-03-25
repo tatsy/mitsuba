@@ -119,6 +119,7 @@ public:
                 */
                 const PhaseFunction *phase = rRec.medium->getPhaseFunction();
 
+                Li += throughput * mRec.transmittance * mRec.Le / mRec.pdfSuccess;
                 throughput *= mRec.sigmaS * mRec.transmittance / mRec.pdfSuccess;
 
                 /* ==================================================================== */

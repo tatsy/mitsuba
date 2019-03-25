@@ -60,6 +60,9 @@ public:
     /// The medium's scattering coefficient at \ref p
     Spectrum sigmaS;
 
+    /// The medium's self-emission at \ref p
+    Spectrum Le;
+
     /// Records the probability density of sampling a medium interaction at p
     Float pdfSuccess;
 

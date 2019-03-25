@@ -208,6 +208,7 @@ public:
         m_scale = stream->readFloat();
         m_density = static_cast<VolumeDataSource *>(manager->getInstance(stream));
         m_albedo = static_cast<VolumeDataSource *>(manager->getInstance(stream));
+        m_emission = static_cast<VolumeDataSource *>(manager->getInstance(stream));
         m_orientation = static_cast<VolumeDataSource *>(manager->getInstance(stream));
         m_stepSize = stream->readFloat();
         configure();
@@ -220,6 +221,7 @@ public:
         stream->writeFloat(m_scale);
         manager->serialize(stream, m_density.get());
         manager->serialize(stream, m_albedo.get());
+        manager->serialize(stream, m_emission.get());
         manager->serialize(stream, m_orientation.get());
         stream->writeFloat(m_stepSize);
     }
@@ -230,6 +232,8 @@ public:
             Log(EError, "No density specified!");
         if (m_albedo.get() == NULL)
             Log(EError, "No albedo specified!");
+        if (m_emission.get() == NULL)
+            Log(EError, "No emission specified!");
         m_densityAABB = m_density->getAABB();
         m_anisotropicMedium =
             m_phaseFunction->needsDirectionallyVaryingCoefficients();
@@ -269,6 +273,9 @@ public:
             } else if (name == "density") {
                 Assert(volume->supportsFloatLookups());
                 m_density = volume;
+            } else if (name == "emission") {
+                Assert(volume->supportsSpectrumLookups());
+                m_emission = volume;            
             } else if (name == "orientation") {
                 Assert(volume->supportsVectorLookups());
                 m_orientation = volume;
@@ -600,6 +607,8 @@ public:
                 Spectrum albedo = m_albedo->lookupSpectrum(mRec.p);
                 mRec.sigmaS = albedo * densityAtT;
                 mRec.sigmaA = Spectrum(densityAtT) - mRec.sigmaS;
+                Spectrum Le = m_emission->lookupSpectrum(mRec.p);
+                mRec.Le = Le * INV_FOURPI;
                 mRec.orientation = m_orientation != NULL
                     ? m_orientation->lookupVector(mRec.p) : Vector(0.0f);
             }
@@ -646,6 +655,8 @@ public:
                     Spectrum albedo = m_albedo->lookupSpectrum(p);
                     mRec.sigmaS = albedo * densityAtT;
                     mRec.sigmaA = Spectrum(densityAtT) - mRec.sigmaS;
+                    Spectrum Le = m_emission->lookupSpectrum(p);
+                    mRec.Le = Le * INV_FOURPI;
                     mRec.transmittance = Spectrum(densityAtT != 0.0f ? 1.0f / densityAtT : 0);
                     if (!std::isfinite(mRec.transmittance[0])) // prevent rare overflow warnings
                         mRec.transmittance = Spectrum(0.0f);
@@ -667,11 +678,12 @@ public:
             Float expVal = math::fastexp(-integrateDensity(ray));
             Float mintDensity = lookupDensity(ray(ray.mint), ray.d) * m_scale;
             Float maxtDensity = 0.0f;
-            Spectrum maxtAlbedo(0.0f);
+            Spectrum maxtAlbedo(0.0f), maxtLe(0.0f);
             if (ray.maxt < std::numeric_limits<Float>::infinity()) {
                 Point p = ray(ray.maxt);
                 maxtDensity = lookupDensity(p, ray.d) * m_scale;
                 maxtAlbedo = m_albedo->lookupSpectrum(p);
+                maxtLe = m_emission->lookupSpectrum(p);
             }
             mRec.transmittance = Spectrum(expVal);
             mRec.pdfFailure = expVal;
@@ -679,6 +691,7 @@ public:
             mRec.pdfSuccessRev = expVal * mintDensity;
             mRec.sigmaS = maxtAlbedo * maxtDensity;
             mRec.sigmaA = Spectrum(maxtDensity) - mRec.sigmaS;
+            mRec.Le = maxtLe;
             mRec.time = ray.time;
             mRec.medium = this;
         } else {
@@ -695,6 +708,7 @@ public:
         oss << "HeterogeneousMedium[" << endl
             << "  density = " << indent(m_density.toString()) << "," << endl
             << "  albedo = " << indent(m_albedo.toString()) << "," << endl
+            << "  emission = " << indent(m_emission.toString()) << "," << endl            
             << "  orientation = " << indent(m_orientation.toString()) << "," << endl
             << "  stepSize = " << m_stepSize << "," << endl
             << "  scale = " << m_scale << endl
@@ -719,6 +733,7 @@ protected:
     EIntegrationMethod m_method;
     ref<VolumeDataSource> m_density;
     ref<VolumeDataSource> m_albedo;
+    ref<VolumeDataSource> m_emission;
     ref<VolumeDataSource> m_orientation;
     Float m_scale;
     bool m_anisotropicMedium;

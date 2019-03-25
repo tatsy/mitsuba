@@ -110,6 +110,7 @@ public:
                 if (rRec.depth >= m_maxDepth && m_maxDepth != -1) // No more scattering events allowed
                     break;
 
+                Li += throughput * mRec.transmittance * mRec.Le / mRec.pdfSuccess;
                 throughput *= mRec.sigmaS * mRec.transmittance / mRec.pdfSuccess;
 
                 /* ==================================================================== */
