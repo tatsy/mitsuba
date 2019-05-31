@@ -4,6 +4,8 @@ plugins += env.SharedLibrary('dipole',
         ['dipole.cpp', 'irrproc.cpp', 'irrtree.cpp', 'bluenoise.cpp'])
 plugins += env.SharedLibrary('heterogeneousbssrdf',
         ['heterogeneousbssrdf.cpp', 'irrproc.cpp', 'irrtree.cpp', 'bluenoise.cpp'])
+plugins += env.SharedLibrary('psf',
+        ['psf.cpp', 'irrproc.cpp', 'irrtree.cpp', 'bluenoise.cpp'])
 
 plugins += env.SharedLibrary('singlescatter', ['singlescatter.cpp'])
 Export('plugins')

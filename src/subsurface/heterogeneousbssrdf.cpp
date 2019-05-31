@@ -429,7 +429,7 @@ public:
     void configure() {
         /* Load BSSRDF data */
         std::ifstream reader(m_fileName.string().c_str(), std::ios::in | std::ios::binary);
-        if (!reader.is_open()) {
+        if (reader.fail()) {
             SLog(EError, "Failed to open BSSRDF File: %s", m_fileName.string().c_str());
         }
 
