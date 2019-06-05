@@ -216,6 +216,7 @@ public:
         m_wrapModeV = parseWrapMode(props.getString("wrapModeV", wrapMode));
 
         m_gamma = props.getFloat("gamma", 0);
+        m_scale = props.getFloat("scale", 1.0);
 
         if (filterType == "ewa")
             m_filterType = EEWA;
@@ -450,7 +451,7 @@ public:
         }
         stats::filteredLookups.incrementBase();
 
-        return result;
+        return result * m_scale;
     }
 
     void evalGradient(const Point2 &uv, Spectrum *gradient) const {
@@ -477,6 +478,8 @@ public:
             }
         }
         stats::filteredLookups.incrementBase();
+
+        *gradient *= m_scale;
     }
 
     ref<Bitmap> getBitmap(const Vector2i &/* unused */) const {
@@ -495,7 +498,7 @@ public:
             Color1 value = m_mipmap1->eval(uv, d0, d1);
             result = Spectrum(value[0]);
         }
-        return result;
+        return result * m_scale;
     }
 
     Spectrum getAverage() const {
@@ -507,7 +510,7 @@ public:
             Color1 value = m_mipmap1->getAverage();
             result = Spectrum(value[0]);
         }
-        return result;
+        return result * m_scale;
     }
 
     Spectrum getMaximum() const {
@@ -519,7 +522,7 @@ public:
             Color1 value = m_mipmap1->getMaximum();
             result = Spectrum(value[0]);
         }
-        return result;
+        return result * m_scale;
     }
 
     Spectrum getMinimum() const {
@@ -531,7 +534,7 @@ public:
             Color1 value = m_mipmap1->getMinimum();
             result = Spectrum(value[0]);
         }
-        return result;
+        return result * m_scale;
     }
 
     bool isConstant() const {
@@ -585,7 +588,7 @@ protected:
     EMIPFilterType m_filterType;
     ReconstructionFilter::EBoundaryCondition m_wrapModeU;
     ReconstructionFilter::EBoundaryCondition m_wrapModeV;
-    Float m_gamma, m_maxAnisotropy;
+    Float m_gamma, m_maxAnisotropy, m_scale;
     std::string m_channel;
     fs::path m_filename;
 };
