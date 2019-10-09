@@ -61,12 +61,22 @@ struct BSSRDFData {
         betas.resize(numGaussians);
     }
 
-    const Spectrum &getWeight(const Point2 &uv, int gaussIndex) const {
-        int x = (int)(uv.x * areaWidth);
-        x = std::max(0, std::min(x, areaWidth - 1));
-        int y = (int)(uv.y * areaHeight);
-        y = std::max(0, std::min(y, areaHeight - 1));
-        return weightCoefs[(y * areaWidth + x) * numGaussians + gaussIndex];
+    const Spectrum getWeight(const Point2 &uv, int gaussIndex) const {
+        const double x = std::max(0.0, std::min(uv.x * areaWidth - 0.5, (double)areaWidth - 1.0));
+        const double y = std::max(0.0, std::min(uv.y * areaHeight - 0.5, (double)areaHeight - 1.0));
+        const int ix = (int)x;
+        const int iy = (int)y;
+        const Float fx = (Float)x - ix;
+        const Float fy = (Float)y - iy;
+
+        const Spectrum &w00 = weightCoefs[(iy * areaWidth + ix) * numGaussians + gaussIndex];
+        const Spectrum &w01 = weightCoefs[(iy * areaWidth + ix + 1) * numGaussians + gaussIndex];
+        const Spectrum &w10 = weightCoefs[((iy + 1) * areaWidth + ix) * numGaussians + gaussIndex];
+        const Spectrum &w11 = weightCoefs[((iy + 1) * areaWidth + ix + 1) * numGaussians + gaussIndex];
+
+        const Spectrum w0 = (1.0 - fx) * w00 + fx * w01;
+        const Spectrum w1 = (1.0 - fx) * w10 + fx * w11; 
+        return (1.0 - fy) * w0 + fy * w1;
     }
 
     int areaWidth, areaHeight;
@@ -104,7 +114,7 @@ struct HeterogeneousBSSRDFQuery {
             }
             Rd[lambda] = std::sqrt(Po * Pi);
         }
-        result += Rd * sample.E * sample.area;
+        result += INV_PI * Rd * sample.E * sample.area;
     }
 #else
     inline void operator()(const IrradianceSample &sample) {
@@ -144,6 +154,7 @@ struct HeterogeneousBSSRDFQuery {
 
         SSEVector _Rd;
         _Rd.ps = _mm_mul_ps(_invPi, _mm_sqrt_ps(_mm_mul_ps(_Po, _Pi)));
+        //_Rd.ps = _mm_sqrt_ps(_mm_mul_ps(_Po, _Pi));
 
         Spectrum Rd;
         Rd[0] = _Rd.f[3];
@@ -368,6 +379,7 @@ public:
         }
 
         m_scale = props.getFloat("scale", 1.0);
+        m_irrScale = props.getFloat("irrScale", 1.0);
         m_eta = intIOR / extIOR;
     }
 
@@ -445,9 +457,9 @@ public:
                 reader.read((char*)buffer, sizeof(double) * bssrdf.numGaussians * 3);
                 for (int h = 0; h < bssrdf.numGaussians; h++) {
                     const int index = ((bssrdf.areaHeight - y - 1) * bssrdf.areaWidth + x) * bssrdf.numGaussians + h;
-                    const Float R = (Float)buffer[h * 3 + 0];
-                    const Float G = (Float)buffer[h * 3 + 1];
-                    const Float B = (Float)buffer[h * 3 + 2];
+                    const Float R = (Float)buffer[h * 3 + 0] * m_irrScale;
+                    const Float G = (Float)buffer[h * 3 + 1] * m_irrScale;
+                    const Float B = (Float)buffer[h * 3 + 2] * m_irrScale;
                     bssrdf.weightCoefs[index].fromLinearRGB(R, G, B);
                 }
             }
@@ -573,7 +585,7 @@ private:
     fs::path m_fileName;
     Vector m_uAxis, m_vAxis;
     Float m_uOffset, m_vOffset;
-    Float m_scale;
+    Float m_scale, m_irrScale;
     BSSRDFData bssrdf;
 
     ref<IrradianceOctree> m_octree;

@@ -64,6 +64,53 @@ struct PSFData {
             return Spectrum(0.0);
         }
         return data[(yi * areaWidth + xi) * (kernelSize * kernelSize) + (ny * kernelSize + nx)];
+
+        // const double xi = std::max(0.0, std::min(uvI.x * (areaWidth - 1) + 0.5, (double)areaWidth - 1.0));
+        // const double yi = std::max(0.0, std::min(uvI.y * (areaHeight - 1) + 0.5, (double)areaHeight - 1.0));
+        // const double xo = std::max(0.0, std::min(uvO.x * (areaWidth - 1) + 0.5, (double)areaWidth - 1.0));
+        // const double yo = std::max(0.0, std::min(uvO.y * (areaHeight - 1) + 0.5, (double)areaHeight - 1.0));
+
+        // const int ixi = (int)xi;
+        // const int iyi = (int)yi;
+        // const Float fxi = (Float)xi - ixi;
+        // const Float fyi = (Float)yi - iyi;
+
+        // const double dx = xo - xi;
+        // const double dy = yo - yi;
+
+        // return evalSub(ixi, iyi, dx, dy);
+
+        // const Spectrum w00 = evalSub(ixi, iyi, dx, dy);
+        // const Spectrum w01 = evalSub(ixi + 1, iyi, dx, dy);
+        // const Spectrum w10 = evalSub(ixi, iyi + 1, dx, dy);
+        // const Spectrum w11 = evalSub(ixi + 1, iyi + 1, dx, dy);
+
+        // const Spectrum w0 = (1.0 - fxi) * w00 + fxi * w01;
+        // const Spectrum w1 = (1.0 - fxi) * w10 + fxi * w11;
+
+        // return (1.0 - fyi) * w0 + fyi * w1;
+    }
+
+    const Spectrum evalSub(int x, int y, double dx, double dy) const {
+        const double nx = dx + (kernelSize - 1) / 2;
+        const double ny = dy + (kernelSize - 1) / 2;
+        if (nx < 0 || nx >= kernelSize - 1 || ny < 0 || ny >= kernelSize - 1) {
+            return Spectrum(0.0);
+        }
+
+        const int ix = (int)nx;
+        const int iy = (int)ny;
+        const Float fx = 0.0; //(Float)nx - ix;
+        const Float fy = 0.0; //(Float)ny - iy;
+
+        const Spectrum &w00 = data[(y * areaWidth + x) * (kernelSize * kernelSize) + (iy * kernelSize + ix)];
+        const Spectrum &w01 = data[(y * areaWidth + x) * (kernelSize * kernelSize) + (iy * kernelSize + ix + 1)];
+        const Spectrum &w10 = data[(y * areaWidth + x) * (kernelSize * kernelSize) + ((iy + 1) * kernelSize + ix)];
+        const Spectrum &w11 = data[(y * areaWidth + x) * (kernelSize * kernelSize) + ((iy + 1) * kernelSize + ix + 1)];
+
+        const Spectrum w0 = (1.0 - fx) * w00 + fx * w01;
+        const Spectrum w1 = (1.0 - fx) * w10 + fx * w11;
+        return (1.0 - fy) * w0 + fy * w1;
     }
 
     int areaWidth, areaHeight, kernelSize;
@@ -71,7 +118,7 @@ struct PSFData {
 };
 
 /**
- * Computes the combined diffuse radiant exitance
+ * Computes the combined diffuse radiant existence
  * caused by a number of dipole sources
  */
 struct PointSpreadFunctionQuery {
@@ -305,7 +352,6 @@ public:
             SLog(EError, "The interior and exteriro indices of refraction must be positive!");
         }
 
-        m_scale = props.getFloat("scale", 1.0);
         m_eta = intIOR / extIOR;
     }
 
@@ -504,7 +550,7 @@ private:
     fs::path m_fileName;
     Vector m_uAxis, m_vAxis;
     Float m_uOffset, m_vOffset;
-    Float m_scale, m_irrScale;
+    Float m_irrScale;
     PSFData psfs;
 
     ref<IrradianceOctree> m_octree;
